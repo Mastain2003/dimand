@@ -1,0 +1,34 @@
+name: Deploy API
+on:
+  push:
+    branches: [main]
+    paths: ['api/**', 'migrations/**']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install
+        working-directory: api
+      - name: Apply database migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api
+          command: d1 migrations apply sanchi-db --remote
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: api
+          secrets: |
+            JWT_SECRET
+            SETUP_KEY
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SETUP_KEY: ${{ secrets.SETUP_KEY }}
