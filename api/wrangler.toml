@@ -11,5 +11,5 @@ PBKDF2_ITER = "50000"
 [[d1_databases]]
 binding = "DB"
 database_name = "sanchi-db"
-database_id = "PASTE_DATABASE_ID_HERE"
+database_id = "52428076-087c-441d-8b2f-569dc1a95256"
 migrations_dir = "../migrations"
