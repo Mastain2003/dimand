@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connection check</title></head>
+<body style="font-family:system-ui,sans-serif;padding:16px;max-width:640px;margin:auto">
+<h3>Connection check</h3>
+<pre id="o" style="white-space:pre-wrap;word-break:break-all;background:#eee;padding:12px;border-radius:8px">Checking…</pre>
+<script type="module">
+const { API } = await import('./config.js?x=' + Date.now());
+const o = document.getElementById('o');
+o.textContent = 'This page: ' + location.origin + '\nAPI setting in config.js: ' + API;
+const tests = [['1. health (GET)', API + '/api/health', {}], ['2. login with empty fields (POST)', API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"mobile":"","password":""}' }]];
+for (const [name, url, opt] of tests) {
+  try { const r = await fetch(url, opt), t = await r.text(); o.textContent += `\n\n${name}\n  URL: ${r.url}\n  status: ${r.status}\n  reply: ${t.slice(0, 120)}`; }
+  catch (e) { o.textContent += `\n\n${name}\n  URL: ${url}\n  FAILED: ${e.message}`; }
+}
+o.textContent += '\n\nExpected: test 1 = 200 {"ok":true}; test 2 = 401 Wrong mobile or password.';
+</script></body></html>
