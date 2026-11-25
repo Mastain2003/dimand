@@ -1,0 +1,8 @@
+{
+  "name": "sanchi-uds-app",
+  "private": true,
+  "description": "Capacitor wrapper that turns the web app in /app into an Android (and later iOS) app. Used only by the GitHub Action.",
+  "scripts": { "brand": "node tools/apply-brand.mjs && node tools/prepare-android.mjs" },
+  "dependencies": { "@capacitor/android": "^6.1.0", "@capacitor/cli": "^6.1.0", "@capacitor/core": "^6.1.0" },
+  "devDependencies": { "@capacitor/assets": "^3.0.5" }
+}

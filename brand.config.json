@@ -1,0 +1,9 @@
+{
+  "name": "Sanchi UDS",
+  "shortName": "Sanchi",
+  "color": "#1a1fd1",
+  "logo": "brand/logo-512.png",
+  "icon192": "brand/logo-192.png",
+  "note": "Used at build time for the app name, APK icon and PWA manifest. Inside the running app the admin can also change name, colour and logo from Settings (stored in the database), no rebuild needed.",
+  "appId": "com.sanchi.uds"
+}

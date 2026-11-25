@@ -1,0 +1,8 @@
+{
+  "name": "sanchi-api",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "wrangler dev", "deploy": "wrangler deploy" },
+  "dependencies": { "hono": "^4.6.0" },
+  "devDependencies": { "wrangler": "^3.90.0" }
+}
