@@ -6,8 +6,9 @@
 <script type="module">
 const { API } = await import('./config.js?x=' + Date.now());
 const o = document.getElementById('o');
-o.textContent = 'This page: ' + location.origin + '\nAPI setting in config.js: ' + API;
-const tests = [['1. health (GET)', API + '/api/health', {}], ['2. login with empty fields (POST)', API + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"mobile":"","password":""}' }]];
+const API_FULL = (/^https?:\/\//i.test(API.trim()) ? API.trim() : 'https://' + API.trim()).replace(/\/+$/, '').replace(/\/api$/i, '');
+o.textContent = (/^https?:\/\//i.test(API.trim()) ? '' : 'NOTE: config.js is missing https:// at the start. The app now adds it automatically, but please fix the file.\n') + 'This page: ' + location.origin + '\nAPI setting in config.js: ' + API;
+const tests = [['1. health (GET)', API_FULL + '/api/health', {}], ['2. login with empty fields (POST)', API_FULL + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"mobile":"","password":""}' }]];
 for (const [name, url, opt] of tests) {
   try { const r = await fetch(url, opt), t = await r.text(); o.textContent += `\n\n${name}\n  URL: ${r.url}\n  status: ${r.status}\n  reply: ${t.slice(0, 120)}`; }
   catch (e) { o.textContent += `\n\n${name}\n  URL: ${url}\n  FAILED: ${e.message}`; }
