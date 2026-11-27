@@ -106,7 +106,7 @@ export function mountCompany(app, { auth }) {
   app.get('/api/c/distributors/:id/products', STAFF, async (c) => {
     const db = c.env.DB, d = await db.prepare('SELECT price_list_id FROM distributors WHERE id=?').bind(c.req.param('id')).first();
     if (!d || !d.price_list_id) throw new Error('This distributor has no price list yet');
-    const ps = await all(db.prepare('SELECT p.id product_id,p.name,p.base_unit,(SELECT rate_paise FROM price_list_items WHERE price_list_id=? AND product_id=p.id AND effective_from<=? ORDER BY effective_from DESC LIMIT 1) rate_paise FROM products p WHERE p.active=1 ORDER BY p.name').bind(d.price_list_id, nowIST().date));
+    const ps = await all(db.prepare('SELECT p.id product_id,p.name,p.base_unit,g.name group_name,(SELECT rate_paise FROM price_list_items WHERE price_list_id=? AND product_id=p.id AND effective_from<=? ORDER BY effective_from DESC LIMIT 1) rate_paise FROM products p LEFT JOIN product_groups g ON g.id=p.group_id WHERE p.active=1 ORDER BY p.name').bind(d.price_list_id, nowIST().date));
     const us = await all(db.prepare('SELECT product_id,unit_name,factor FROM product_units'));
     return c.json(ps.filter((p) => p.rate_paise != null).map((p) => ({ ...p, units: us.filter((u) => u.product_id === p.product_id) })));
   });

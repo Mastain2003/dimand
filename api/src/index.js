@@ -72,10 +72,10 @@ app.post('/api/setup', async (c) => {
 
 // ---------- auth ----------
 app.post('/api/auth/login', async (c) => {
-  const { mobile, password } = await c.req.json();
+  const { mobile, password, remember } = await c.req.json();
   const u = await c.env.DB.prepare('SELECT * FROM users WHERE mobile=? AND active=1').bind(String(mobile || '').trim()).first();
   if (!u || !(await verifyPassword(String(password || ''), u.password_hash))) return c.json({ error: 'Wrong mobile or password' }, 401);
-  const token = await signJwt({ uid: u.id, role: u.role, pid: u.party_id }, c.env.JWT_SECRET);
+  const token = await signJwt({ uid: u.id, role: u.role, pid: u.party_id }, c.env.JWT_SECRET, remember ? 30 * 86400 : 86400);   // 30 days if "keep me logged in", else 1 day
   return c.json({ token, user: { id: u.id, name: u.name, role: u.role, party_id: u.party_id, must_change_password: !!u.must_change_password } });
 });
 app.get('/api/me', auth(), async (c) => {

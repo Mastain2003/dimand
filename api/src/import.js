@@ -35,11 +35,11 @@ const KINDS = {
     const db = X.db, pls = new Map((await all(db.prepare('SELECT id,name FROM price_lists'))).map((p) => [lc(p.name), p.id]));
     const names = [...new Set(rows.map((r) => t(get(r, 'product', 'name', 'productname'))).filter(Boolean))];
     const ex = new Map(names.length ? (await all(db.prepare(`SELECT id,name FROM products WHERE name IN (${inList(names)})`).bind(...names))).map((p) => [p.name, p.id]) : []);
-    const KNOWN = ['product', 'name', 'productname', 'group', 'baseunit', 'unit', 'unit2', 'factor2', 'unit3', 'factor3', 'active', 'sno', 'srno', '#'], seen = new Set();
+    const KNOWN = ['product', 'name', 'productname', 'group', 'baseunit', 'unit', 'unit2', 'factor2', 'unit3', 'factor3', 'unit4', 'factor4', 'active', 'sno', 'srno', '#'], seen = new Set();
     rows.forEach((r, i) => {
       const name = t(get(r, 'product', 'name', 'productname')), base = t(get(r, 'baseunit', 'unit')), group = t(get(r, 'group')) || null;
       if (!name) return bad(i, 'Product name is empty'); if (!base) return bad(i, 'Base unit is empty (ltr, kg, nos ...)'); if (seen.has(name)) return bad(i, 'Duplicate product in this chunk'); seen.add(name);
-      const units = []; for (const [u, f] of [['unit2', 'factor2'], ['unit3', 'factor3']]) { const un = t(get(r, u)); if (!un) continue; const fv = num(get(r, f)); if (!(fv > 0)) return bad(i, `${u}: "${un}" needs a factor above 0 (how many ${base})`); if (lc(un) !== lc(base)) units.push([un, fv]); }
+      const units = []; for (const [u, f] of [['unit2', 'factor2'], ['unit3', 'factor3'], ['unit4', 'factor4']]) { const un = t(get(r, u)); if (!un) continue; const fv = num(get(r, f)); if (!(fv > 0)) return bad(i, `${u}: "${un}" needs a factor above 0 (how many ${base})`); if (lc(un) !== lc(base)) units.push([un, fv]); }
       const rates = []; let rowBad = false;
       for (const [k, v] of Object.entries(r)) {
         if (KNOWN.includes(normKey(k)) || t(v) === '') continue;

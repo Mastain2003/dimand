@@ -18,7 +18,7 @@ export function mountRetail(app, { auth, all, iter }) {
   async function productsFor(db, ret) {
     if (!ret.price_list_id) throw new Error('No price list is assigned to this retailer yet');
     const t = nowIST().date, mrp = await db.prepare("SELECT id FROM price_lists WHERE type='mrp' AND active=1 ORDER BY id LIMIT 1").first('id');
-    const rows = await all(db.prepare(`SELECT p.id product_id,p.name,p.base_unit,p.group_id,${RATE} rate_paise,${mrp ? RATE : 'NULL'} mrp_paise FROM products p WHERE p.active=1 ORDER BY p.name`).bind(ret.price_list_id, t, ...(mrp ? [mrp, t] : [])));
+    const rows = await all(db.prepare(`SELECT p.id product_id,p.name,p.base_unit,p.group_id,g.name group_name,${RATE} rate_paise,${mrp ? RATE : 'NULL'} mrp_paise FROM products p LEFT JOIN product_groups g ON g.id=p.group_id WHERE p.active=1 ORDER BY p.name`).bind(ret.price_list_id, t, ...(mrp ? [mrp, t] : [])));
     const us = await all(db.prepare('SELECT product_id,unit_name,factor FROM product_units'));
     return rows.filter((r) => r.rate_paise != null).map((r) => ({ ...r, units: us.filter((u) => u.product_id === r.product_id) }));
   }
