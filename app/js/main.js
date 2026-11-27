@@ -1,4 +1,4 @@
-import { h, toast, modal } from './ui.js';
+import { h, toast, modal, pwBox } from './ui.js';
 import { fmtTime } from './lib.js';
 import { api, getToken, setToken } from './api.js';
 import { distributors } from './screens/dist.js';
@@ -31,14 +31,20 @@ async function refreshBrand() {
 const ctx = { get user() { return user; }, brand, ro: true, refreshBrand, logout() { setToken(null); user = null; start(); } };
 
 function loginScreen() {
-  const m = h('input', { type: 'tel', placeholder: 'Mobile number', autocomplete: 'username' }), p = h('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' }), err = h('div', { class: 'err' });
+  const m = h('input', { type: 'tel', placeholder: 'Mobile number', autocomplete: 'username', value: localStorage.getItem('lastMobile') || '' }), p = h('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' }), err = h('div', { class: 'err' });
+  const keep = h('input', { type: 'checkbox' }); keep.checked = localStorage.getItem('keepMe') !== '0';
   const go = async () => {
     err.textContent = '';
-    try { const r = await api('/auth/login', { method: 'POST', body: { mobile: m.value.trim(), password: p.value } }); setToken(r.token); user = r.user; afterLogin(); } catch (e) { err.textContent = e.message; }
+    try {
+      const r = await api('/auth/login', { method: 'POST', body: { mobile: m.value.trim(), password: p.value, remember: keep.checked } });
+      setToken(r.token, keep.checked); localStorage.setItem('keepMe', keep.checked ? '1' : '0');
+      if (keep.checked) localStorage.setItem('lastMobile', m.value.trim()); else localStorage.removeItem('lastMobile');
+      user = r.user; afterLogin();
+    } catch (e) { err.textContent = e.message; }
   };
   p.addEventListener('keydown', (e) => e.key === 'Enter' && go());
   root.replaceChildren(h('div', { class: 'login' }, h('img', { src: brand.logo, alt: '' }), h('h2', {}, brand.name),
-    h('div', { class: 'card' }, h('label', {}, h('span', {}, 'Mobile number'), m), h('label', {}, h('span', {}, 'Password'), p), err, h('div', { class: 'btns' }, h('button', { class: 'btn', style: 'width:100%', onclick: go }, 'Log in'))),
+    h('div', { class: 'card' }, h('label', {}, h('span', {}, 'Mobile number'), m), h('label', {}, h('span', {}, 'Password'), pwBox(p)), h('label', { class: 'chk' }, keep, h('span', {}, 'Keep me logged in on this device (30 days)')), err, h('div', { class: 'btns' }, h('button', { class: 'btn', style: 'width:100%', onclick: go }, 'Log in'))),
     h('small', {}, 'Forgot password? Ask your distributor (retailers) or the company (distributors) to reset it.')));
 }
 function afterLogin() {

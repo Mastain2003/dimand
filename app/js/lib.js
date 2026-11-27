@@ -23,5 +23,23 @@ export function ledgerTable(entries, onReverse) {
 }
 const source = () => h('small', {}, ' (reversed)');
 export const fmtTime = (at) => new Date(at.replace(' ', 'T') + 'Z').toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-// "2 crate + 6 ltr" for an order line, using the unit list that the API sends along
-export const lineQty = (units, l) => qtyText(units[l.product_id] || [{ unit_name: l.base_unit, factor: 1 }], l.base_unit, l.qty_base);
+
+
+// Final quantities are always shown in the base unit (nos), never as "2 crate + 6".
+export const lineQty = (units, l) => `${+(+l.qty_base).toFixed(2)} ${l.base_unit}`;
+export const nosText = (lines) => lines.map((l) => `${l.name} ${+(+l.qty_base).toFixed(2)} ${l.base_unit}`).join(', ');
+// What a retailer typed, with the nos total: "Milk 2 crate (24 nos)"
+export const packText = (lines) => lines.map((l) => `${l.name} ${l.qty} ${l.unit}${l.unit !== l.base_unit ? ` (${+(+l.qty_base).toFixed(2)} ${l.base_unit})` : ''}`).join(', ');
+// Units an order can be taken in: packs (nos, crate, jar, box ...), never litre/kg/g/ml. `keep` = a unit already used (old demands).
+const MEASURE = new Set(['ltr', 'litre', 'liter', 'litres', 'liters', 'l', 'lt', 'kg', 'kgs', 'kilo', 'g', 'gm', 'gms', 'gram', 'grams', 'ml']);
+export const isMeasure = (u) => MEASURE.has(String(u).trim().toLowerCase());
+export function orderUnits(units, keep) {
+  const sorted = [...units].sort((a, b) => a.factor - b.factor), ok = sorted.filter((u) => !isMeasure(u.unit_name) || u.unit_name === keep);
+  return ok.length ? ok : sorted;   // a product with only litre/kg units can still be ordered
+}
+// Products grouped by product group (groups A-Z, "Other" last): [[groupName, [products]], ...]
+export function groupProducts(prods) {
+  const m = new Map();
+  [...prods].sort((a, b) => (a.group_name || '\uffff').localeCompare(b.group_name || '\uffff') || a.name.localeCompare(b.name)).forEach((p) => { const k = p.group_name || 'Other'; if (!m.has(k)) m.set(k, []); m.get(k).push(p); });
+  return [...m];
+}

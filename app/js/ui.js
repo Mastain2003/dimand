@@ -12,12 +12,21 @@ export function h(tag, props, ...kids) {
 export const rs = (p) => (p == null ? '' : (p / 100).toFixed(2).replace(/\.00$/, ''));
 export const paise = (s) => (String(s).trim() === '' || isNaN(+s) ? null : Math.round(parseFloat(s) * 100));
 export function toast(msg) { const t = h('div', { class: 'toast' }, msg); document.body.append(t); setTimeout(() => t.remove(), 2600); }
-export function modal(title, content, actions = []) {
-  const ov = h('div', { class: 'ov', onclick: (e) => { if (e.target === ov) close(); } });
-  const close = () => ov.remove();
-  ov.append(h('div', { class: 'sheet' }, h('div', { class: 'row' }, h('h2', {}, title), h('button', { class: 'x', onclick: close }, '✕')), content,
-    h('div', { class: 'btns' }, actions.map((a) => h('button', { class: 'btn ' + (a.cls || ''), onclick: () => a.run(close) }, a.label)))));
+// Panels (bottom sheets). They do NOT close when you tap outside. They close with the X button, Cancel, the device Back button, or when the action finishes.
+const stack = []; let ignorePop = 0;
+window.addEventListener('popstate', () => { if (ignorePop > 0) { ignorePop--; return; } const top = stack[stack.length - 1]; if (top) top(true); });
+export function modal(title, content, actions = [], opts = {}) {
+  const ov = h('div', { class: 'ov' });
+  let closed = false;
+  const close = (fromBack) => {
+    if (closed) return; closed = true; ov.remove();
+    const i = stack.indexOf(close); if (i >= 0) stack.splice(i, 1);
+    if (fromBack !== true) { ignorePop++; history.back(); }   // remove the history entry this panel added
+  };
+  ov.append(h('div', { class: 'sheet' + (opts.tall ? ' tall' : '') }, h('div', { class: 'row' }, h('h2', {}, title), h('button', { class: 'x', 'aria-label': 'Close', onclick: () => close() }, '✕')), content,
+    actions.length ? h('div', { class: 'btns' }, actions.map((a) => h('button', { class: 'btn ' + (a.cls || ''), onclick: () => a.run(close) }, a.label))) : null));
   document.body.append(ov);
+  history.pushState({ panel: 1 }, ''); stack.push(close);
   return { close };
 }
 export function formModal(title, fields, init, onSave, saveLabel = 'Save') {
@@ -30,7 +39,7 @@ export function formModal(title, fields, init, onSave, saveLabel = 'Save') {
     const v = init && init[f.k];
     if (f.type === 'checkbox') el.checked = !!v; else if (v != null) el.value = v;
     inputs[f.k] = el;
-    return h('label', { class: f.type === 'checkbox' ? 'chk' : '' }, h('span', {}, f.label), el, f.hint && h('small', {}, f.hint));
+    return h('label', { class: f.type === 'checkbox' ? 'chk' : '' }, h('span', {}, f.label), f.type === 'password' ? pwBox(el) : el, f.hint && h('small', {}, f.hint));
   }), err);
   return modal(title, body, [{ label: 'Cancel', cls: 'ghost', run: (c) => c() }, { label: saveLabel, run: async (close) => {
     const out = {};
@@ -50,3 +59,8 @@ export const loading = (root) => root.replaceChildren(h('p', { class: 'mu' }, 'L
 export const fail = (root, e) => root.replaceChildren(h('div', { class: 'card' }, h('b', {}, 'Could not load'), h('p', { class: 'err' }, e.message)));
 // Like root.replaceChildren but accepts arrays and ignores false/null (so `cond && node` is safe).
 export const put = (root, ...kids) => root.replaceChildren(...kids.flat(9).filter((x) => x != null && x !== false));
+// Wraps a password <input> with a Show/Hide button.
+export function pwBox(input) {
+  const b = h('button', { type: 'button', class: 'pwtoggle', onclick: () => { const show = input.type === 'password'; input.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show'; } }, 'Show');
+  return h('div', { class: 'pwwrap' }, input, b);
+}
