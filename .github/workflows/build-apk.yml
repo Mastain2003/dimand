@@ -21,15 +21,12 @@ jobs:
         run: node tools/apply-brand.mjs && node tools/prepare-android.mjs
       - name: Create the Android project
         run: npx cap add android
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
       - name: Make launcher icon + splash from the brand logo
         run: |
-          sudo apt-get update && sudo apt-get install -y imagemagick
-          mkdir -p assets
-          convert brand/logo-512.png -resize 1024x1024 assets/icon-only.png
-          convert -size 1024x1024 xc:none brand/logo-512.png -resize 680x680 -gravity center -composite assets/icon-foreground.png
-          convert -size 1024x1024 xc:white assets/icon-background.png
-          convert -size 2732x2732 xc:white brand/logo-512.png -resize 640x640 -gravity center -composite assets/splash.png
-          cp assets/splash.png assets/splash-dark.png
+          pip install pillow
+          python3 tools/make-assets.py
           npx @capacitor/assets generate --android
       - run: npx cap sync android
       - name: Build debug APK
