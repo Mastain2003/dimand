@@ -29,6 +29,12 @@ tools/        rebrand script, local dev server, automated tests
 5. Open the app, log in as admin. Suggested order: Masters (Routes, Cities, Price lists, Products) → Distributors → everything else. Or import it all from Excel (below).
 6. On phones: open the app address, choose **Add to Home screen** (works on iPhone too).
 
+If login shows "405" or the app seems to use an old address, the browser cached an old `config.js`: open the app in a private tab or clear the site data. (`app/_headers` makes browsers re-check files on every load, so this only affects versions deployed before it was added.)
+
+Ordering units: orders are taken in packs (nos, crate, jar, box, carton ...), never in litre/kg/g/ml, and final quantities (summaries, company orders, dispatches) are shown in the base unit. So set the base unit of packed goods to **nos** and add crate/box/jar/carton as conversions (1 crate = 12 nos). Products are grouped by product group in every order screen.
+
+Panels (the pop-up sheets) do not close when you tap outside; they close with the X button, Cancel, the device Back button, or when the action finishes.
+
 ## 2. Day-to-day flow
 Retailer demand (AM/PM) → distributor approves (edit qty/rate; rate is locked on the line) → distributor dispatches to the retailer (ledger debit at dispatch) → distributor sends the approved totals to the company for that session (blocked after the company-set cutoff; later ones go as supplementary orders) → company accepts/edits, dispatches in one or more shipments (ledger debit) → payments are recorded and ledgers balance. Payments are reversed, never deleted. Only the company can move a distributor's order between AM/PM; only the distributor can move a retailer's demand; a distributor can pull a demand out of a sent order until the company starts dispatching.
 
