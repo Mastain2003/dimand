@@ -39,3 +39,8 @@ table.led{font-size:13px}table.led th{font-size:12px;color:var(--mu);text-align:
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px}.chart{width:100%;height:auto;display:block}.chart text{fill:var(--mu);font-size:9px}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--mu);margin-top:4px}.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;background:var(--ac)}.legend i.p{background:var(--mu)}
 .prog{height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin:8px 0}.prog div{height:100%;background:var(--ac);width:0}
+.pwwrap{position:relative}.pwwrap input{padding-right:64px}.pwtoggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--tx);font:inherit;font-size:13px;font-weight:600;padding:6px 8px;cursor:pointer}
+.sheet.tall{min-height:88vh}.sheet .bar{bottom:0}
+.ghead{display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid var(--ln);cursor:pointer;user-select:none}.ghead b{flex:1}.gsec+.gsec .ghead{margin-top:4px}
+.sheet.tall{display:flex;flex-direction:column}.sheet.tall>div:nth-child(2){flex:1;display:flex;flex-direction:column}.sheet.tall .bar{margin-top:auto}
+.sheet.tall>div:nth-child(2)>div:last-child{flex:1;display:flex;flex-direction:column}
