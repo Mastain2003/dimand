@@ -1,6 +1,6 @@
 import { put, h, modal, formModal, confirmBox, showSecret, seg, toast, loading, fail, paise } from '../ui.js';
 import { api } from '../api.js';
-import { money, rateStr, istToday, dshort, total, lineAmt, statusTag, itemsText, ledgerTable, balText } from '../lib.js';
+import { money, rateStr, istToday, dshort, total, lineAmt, statusTag, itemsText, nosText, packText, ledgerTable, balText, orderUnits, groupProducts } from '../lib.js';
 import { demandBuilder } from './retailer.js';
 import { accountCard } from './settings.js';
 
@@ -17,7 +17,7 @@ async function approveSheet(d, done) {
     box.replaceChildren(...rows.map((r, i) => {
       const us = unitsOf(r.product_id, r.unit), f = () => us.find((u) => u.unit_name === r.unit)?.factor || 1;
       const sub = h('small', {}), calc = () => { sub.textContent = `= ${money(Math.round(r.qty * f() * r.rate_paise))}`; tot.textContent = money(rows.reduce((s, x) => s + Math.round(x.qty * (unitsOf(x.product_id, x.unit).find((u) => u.unit_name === x.unit)?.factor || 1) * x.rate_paise), 0)); };
-      const unit = h('select', { onchange: () => { r.unit = unit.value; calc(); } }, us.map((u) => h('option', { value: u.unit_name }, u.unit_name))); unit.value = r.unit;
+      const unit = h('select', { onchange: () => { r.unit = unit.value; calc(); } }, orderUnits(us, r.unit).map((u) => h('option', { value: u.unit_name }, u.unit_name))); unit.value = r.unit;
       const qty = h('input', { type: 'number', step: 'any', value: r.qty, oninput: () => { r.qty = +qty.value; calc(); } });
       const rate = h('input', { type: 'number', step: 'any', value: rateStr(r.rate_paise), oninput: () => { r.rate_paise = Math.round(parseFloat(rate.value || 0) * 1e6) / 1e4; calc(); } });
       calc();
@@ -26,10 +26,10 @@ async function approveSheet(d, done) {
     }));
     tot.textContent = tot.textContent || '';
   };
-  const add = h('select', {}, h('option', { value: '' }, '+ Add another product'), prods.filter((p) => !rows.some((r) => r.product_id === p.product_id)).map((p) => h('option', { value: p.product_id }, p.name)));
-  add.onchange = () => { const p = prods.find((x) => x.product_id === +add.value); if (p) { rows.push({ product_id: p.product_id, name: p.name, base_unit: p.base_unit, unit: p.base_unit, qty: 1, qty_base: 1, rate_paise: p.rate_paise }); draw(); add.remove(add.selectedIndex); add.value = ''; } };
+  const add = h('select', {}, h('option', { value: '' }, '+ Add another product'), groupProducts(prods.filter((p) => !rows.some((r) => r.product_id === p.product_id))).map(([g, items]) => h('optgroup', { label: g }, items.map((p) => h('option', { value: p.product_id }, p.name)))));
+  add.onchange = () => { const p = prods.find((x) => x.product_id === +add.value); if (p) { const u = orderUnits(p.units)[0].unit_name; rows.push({ product_id: p.product_id, name: p.name, base_unit: p.base_unit, unit: u, qty: 1, qty_base: 1, rate_paise: p.rate_paise }); draw(); add.querySelector(`option[value="${p.product_id}"]`)?.remove(); add.value = ''; } };
   draw();
-  modal(`${d.status === 'approved' ? 'Edit approval' : 'Approve'} · ${d.shop_name} #${d.id}`, h('div', {}, h('small', {}, `Retailer asked: ${itemsText(d.items)}. Rates default to the retailer's price list; you can change them for this demand.`), box, add, h('div', { class: 'row', style: 'margin-top:10px' }, h('span', {}, 'Total'), tot), err),
+  modal(`${d.status === 'approved' ? 'Edit approval' : 'Approve'} · ${d.shop_name} #${d.id}`, h('div', {}, h('small', {}, `Retailer asked: ${packText(d.items)}. Rates default to the retailer's price list; you can change them for this demand.`), box, add, h('div', { class: 'row', style: 'margin-top:10px' }, h('span', {}, 'Total'), tot), err),
     [{ label: 'Cancel', cls: 'ghost', run: (c) => c() }, { label: 'Approve', run: async (c) => {
       try { await api(`/d/demands/${d.id}/approve`, { method: 'POST', body: { items: rows.map((r) => ({ product_id: r.product_id, unit: r.unit, qty: r.qty, rate_paise: r.rate_paise })) } }); toast('Approved'); c(); done(); } catch (e) { err.textContent = e.message; } } }]);
 }
@@ -56,7 +56,7 @@ export async function inbox(root, ctx) {
   const card = (d) => {
     const lines = d.approved || d.items, got = d.dispatched_base || {};
     return h('div', { class: 'card' }, h('div', { class: 'row' }, h('b', {}, d.shop_name), statusTag(d.status)), h('small', {}, `#${d.id} · ${d.session} · ${dshort(d.demand_date)}${d.company_order_id ? ' · in company order #' + d.company_order_id : ''}`),
-      h('div', {}, itemsText(lines)), h('small', {}, `${d.approved ? 'Approved' : 'Requested'} ${money(total(lines))}${Object.keys(got).length ? ' · sent so far ' + lines.map((l) => `${l.name} ${+(got[l.product_id] || 0).toFixed(2)}/${l.qty_base}`).join(', ') : ''}`),
+      h('div', {}, nosText(lines)), h('small', {}, `${d.approved ? 'Approved' : 'Requested'} ${money(total(lines))}${Object.keys(got).length ? ' · sent so far ' + lines.map((l) => `${l.name} ${+(got[l.product_id] || 0).toFixed(2)}/${l.qty_base}`).join(', ') : ''}`),
       h('div', { class: 'wrap' }, ['submitted', 'approved'].includes(d.status) && !d.dispatches.length && !d.company_order_id && h('button', { class: 'btn sm', onclick: () => approveSheet(d, reload) }, d.status === 'approved' ? 'Edit approval' : 'Approve / edit'),
         ['approved', 'part_dispatched'].includes(d.status) && h('button', { class: 'btn sm', onclick: () => dispatchSheet(d, reload) }, 'Dispatch'),
         ['submitted', 'approved'].includes(d.status) && !d.dispatches.length && !d.company_order_id && h('button', { class: 'btn sm ghost', onclick: () => sessionSheet(d) }, 'Change session'),
@@ -98,7 +98,7 @@ async function detail(root, ctx, r, back) {
   const demand = async () => {
     let products, info; try { products = await api(`/d/retailers/${r.id}/products`); } catch (e) { return toast(e.message); }
     const t = istToday(), sessions = { AM: { date: t, note: 'Today' }, PM: { date: t, note: 'Today' }, default: 'AM' }, m = modal(`Demand for ${r.shop_name}`, h('div', {}, h('small', {}, 'Phone/visit order. Cutoff times do not apply to you.'),
-      demandBuilder({ products, sessions, label: 'Create demand', onSubmit: async (b) => { await api(`/d/retailers/${r.id}/demands`, { method: 'POST', body: b }); m.close(); toast('Demand created, find it under Demands'); } })));
+      demandBuilder({ products, sessions, label: 'Create demand', onSubmit: async (b) => { await api(`/d/retailers/${r.id}/demands`, { method: 'POST', body: b }); m.close(); toast('Demand created, find it under Demands'); } })), [], { tall: true });
   };
   put(root, h('button', { class: 'btn sm ghost', onclick: back }, '← Retailers'), h('h2', {}, r.shop_name), h('small', {}, `${r.mobile || ''} · ${r.price_list_name || 'no price list'}`),
     h('div', { class: 'card row', style: 'margin-top:8px' }, h('span', {}, 'Balance'), h('b', { style: 'font-size:20px' }, balText(bal))),

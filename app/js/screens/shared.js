@@ -1,6 +1,6 @@
 import { h, modal, toast } from '../ui.js';
 import { api } from '../api.js';
-import { money, rateStr, istToday } from '../lib.js';
+import { money, rateStr, istToday, orderUnits, groupProducts } from '../lib.js';
 
 // Edit order lines (qty, unit, rate; add/remove products). Used by the company to edit an order or create one for a distributor.
 export function linesSheet({ title, intro, lines, prods, noteLabel, saveLabel, onSave }) {
@@ -10,7 +10,7 @@ export function linesSheet({ title, intro, lines, prods, noteLabel, saveLabel, o
   const draw = () => {
     box.replaceChildren(...rows.map((r, i) => {
       const us = prods.find((p) => p.product_id === r.product_id)?.units || [{ unit_name: r.unit, factor: 1 }], sub = h('small', {}), calc = () => { sub.textContent = `= ${money(Math.round(r.qty * f(r) * r.rate_paise))}`; recalc(); };
-      const unit = h('select', { onchange: () => { r.unit = unit.value; calc(); } }, us.map((u) => h('option', { value: u.unit_name }, u.unit_name))); unit.value = r.unit;
+      const unit = h('select', { onchange: () => { r.unit = unit.value; calc(); } }, orderUnits(us, r.unit).map((u) => h('option', { value: u.unit_name }, u.unit_name))); unit.value = r.unit;
       const qty = h('input', { type: 'number', step: 'any', value: r.qty, oninput: () => { r.qty = +qty.value; calc(); } });
       const rate = h('input', { type: 'number', step: 'any', value: rateStr(r.rate_paise), oninput: () => { r.rate_paise = Math.round(parseFloat(rate.value || 0) * 1e6) / 1e4; calc(); } });
       calc();
@@ -18,8 +18,8 @@ export function linesSheet({ title, intro, lines, prods, noteLabel, saveLabel, o
         h('div', { class: 'g' }, h('label', {}, h('span', {}, 'Qty'), qty), h('label', {}, h('span', {}, 'Unit'), unit), h('label', {}, h('span', {}, `Rate ₹/${r.base_unit}`), rate)), sub);
     })); recalc();
   };
-  const add = h('select', {}, h('option', { value: '' }, '+ Add product'), prods.map((p) => h('option', { value: p.product_id }, p.name)));
-  add.onchange = () => { const p = prods.find((x) => x.product_id === +add.value); if (p && !rows.some((r) => r.product_id === p.product_id)) { rows.push({ product_id: p.product_id, name: p.name, base_unit: p.base_unit, unit: p.base_unit, qty: 1, rate_paise: p.rate_paise }); draw(); } add.value = ''; };
+  const add = h('select', {}, h('option', { value: '' }, '+ Add product'), groupProducts(prods).map(([g, items]) => h('optgroup', { label: g }, items.map((p) => h('option', { value: p.product_id }, p.name)))));
+  add.onchange = () => { const p = prods.find((x) => x.product_id === +add.value); if (p && !rows.some((r) => r.product_id === p.product_id)) { rows.push({ product_id: p.product_id, name: p.name, base_unit: p.base_unit, unit: orderUnits(p.units)[0].unit_name, qty: 1, rate_paise: p.rate_paise }); draw(); } add.value = ''; };
   draw();
   modal(title, h('div', {}, intro && h('small', {}, intro), box, add, h('div', { class: 'row', style: 'margin-top:10px' }, h('span', {}, 'Total'), tot), h('label', {}, h('span', {}, noteLabel || 'Note'), note), err),
     [{ label: 'Cancel', cls: 'ghost', run: (c) => c() }, { label: saveLabel || 'Save', run: async (c) => {

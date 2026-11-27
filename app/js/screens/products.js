@@ -19,15 +19,15 @@ export async function products(root, ctx) {
   async function form(p) {
     let rates;
     try { rates = p ? await api(`/products/${p.id}/rates`) : lists.filter((l) => l.active).map((l) => ({ price_list_id: l.id, name: l.name, type: l.type, rate_paise: null })); } catch (e) { return toast(e.message); }
-    const f = { name: h('input', { value: p?.name || '' }), base: h('input', { value: p?.base_unit || '', placeholder: 'ltr, kg, nos' }),
+    const f = { name: h('input', { value: p?.name || '' }), base: h('input', { value: p?.base_unit || '', placeholder: 'nos' }),
       group: h('select', {}, h('option', { value: '' }, '— none —'), groups.map((g) => h('option', { value: g.id }, g.name))), active: h('input', { type: 'checkbox' }) };
     f.group.value = p?.group_id ?? ''; f.active.checked = p ? !!p.active : false;
-    const alts = [0, 1, 2].map((i) => { const u = p?.units.filter((x) => x.factor !== 1)[i]; return { n: h('input', { value: u?.unit_name || '', placeholder: 'crate, carton, can' }), f: h('input', { type: 'number', step: 'any', value: u?.factor || '', placeholder: 'base units' }) }; });
+    const alts = [0, 1, 2].map((i) => { const u = p?.units.filter((x) => x.factor !== 1)[i]; return { n: h('input', { value: u?.unit_name || '', placeholder: 'crate, box, jar' }), f: h('input', { type: 'number', step: 'any', value: u?.factor || '', placeholder: 'base units' }) }; });
     const rin = rates.map((r) => ({ r, el: h('input', { type: 'number', step: 'any', inputmode: 'decimal', value: rs(r.rate_paise), placeholder: 'missing' }) }));
     const err = h('div', { class: 'err' });
     const body = h('div', {},
       h('label', {}, h('span', {}, 'Product name'), f.name), h('label', {}, h('span', {}, 'Group'), f.group),
-      h('label', {}, h('span', {}, 'Base unit (rates are per base unit)'), f.base, p && h('small', {}, 'Do not change the base unit once orders exist.')),
+      h('label', {}, h('span', {}, 'Base unit (rates are per base unit). Use nos for packed goods'), f.base, p && h('small', {}, 'Do not change the base unit once orders exist.')),
       h('h3', {}, 'Other units (1 unit = how many base units)'), ...alts.map((a) => h('div', { class: 'alt', style: 'margin-bottom:6px' }, a.n, a.f)),
       h('h3', {}, 'Rates per base unit (₹)'), rin.length ? h('div', { class: 'rates' }, rin.map(({ r, el }) => [h('span', {}, `${r.name} `, h('small', {}, r.type)), el])) : h('p', { class: 'mu' }, 'Create price lists first (Price lists tab).'),
       h('label', { class: 'chk' }, f.active, h('span', {}, 'Active (visible for ordering). Fill every rate first.')), err);
